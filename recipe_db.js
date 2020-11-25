@@ -18,94 +18,203 @@ db.once('open', function(){
     //your tutorial and new code go here. 
     console.log("We're connected");
 
+// Make Mongoose use `findOneAndUpdate()`. Note that this option is `true`
+// by default, you need to set it to false, otherwise get a deprecation warning
+//at top of terminal code 
+mongoose.set('useFindAndModify', false);
+
     /* schema  */
+    //this creates the ingredient Schema (which is an object used inside of the recipe--ingredients schema)
+    const ingredientSchema = new mongoose.Schema({
+        name: String,
+        measurement: String,
+        amount: Number
+    });
+    //this creates a new schema called recipeSchema
     const recipeSchema = new mongoose.Schema({
         name: String,
         description: String,
-        ingredients: [String],
-        measure: [String],
+        ingredients: [ingredientSchema],
         instructions: String,
     }); 
 
-    const ingredient = new mongoose.Schema({
-        name: String
-    });
-
-    const measure = new mongoose.Schema({
-        name: String
-    });
-
-    const RecipeIngredient = new mongoose.Schema({
-        ingredients : [
-            {type: mongoose.Schema.Types.ObjectId, ref: "Ingredient"}],
-        recipe : 
-    });
-
-    recipeSchema.methods.make = function(){
-        let cooking; 
-        if(this.name){
-            cooking = this.name; 
-        }
-        else {
-            cooking = "I don't see that recipe!"; 
-        }
-        console.log(cooking); 
-    }
+   
 
     /* model */ 
+    //this sets the const variable to Recipe for the model
+    //the first argument is the name of the collection that will be created for the model
+    //the second arguement, recipeSchema is the schema that will be used in creating
+    //the model 
      const Recipe = mongoose.model("Recipe", recipeSchema); 
 
+     //recipe instance of the Recipe model 
+     let recipe = new Recipe; 
+
     /* documents */ 
-    let recipe1 = new Recipe({ name : "Grilled Cheese" }); 
-    recipe1.make(); 
-    recipe1.name = "Grilled Cheese";
-    //????? recipe1.description = "Cheesy Grilled Cheese";
+    //documents in mongodb are the same as rows/tables, they are the instances of the models
+    //this is setting a variable (stoneSoupObj) to an object with different properties i.e. name, description, etc (this is actually creating our data)
+    let stoneSoupObj =  {
+        name: "Stone Soup",
+        description: "A soup made by tricked villagers",
+        ingredients: [
+            { name: "Carrots", 
+            measurement: "Cups",
+            amount: 5 
+            },
 
-    let recipe2 = new Recipe({ name : "Scrambled Eggs" }); 
-    recipe2.make(); 
-    recipe2.name = "Scrambled Eggs";
+            {name: "Onions",
+            measurement: "Cups",
+            amount: 5
+            },
 
-    let recipe3 = new Recipe({ name : "Popcorn" }); 
-    recipe3.make(); 
-    recipe3.name = "Popcorn";
+            {name: "Whatever you want",
+            measurement: "Cups",
+            amount: 5 
+            }
+        ]
+    }; 
 
-    //const fluffy = new Kitten({name : "fluffy"}); 
-    //fluffy.speak(); 
+    //creating a variable, stoneSoup and setting it equal to the stoneSoupObj Recipe 
+    //object
+    let stoneSoup = new Recipe(stoneSoupObj);
 
-    /* how to save a document after it's been created/updated */ 
-    recipe1.save(function(err, grilled){
-        if(err) return console.error(err); 
-        recipe1.make(); 
+    //this is setting a variable (popcornObj) to an object with different properties i.e. name, description, etc (this is actually creating our data)
+    let popcornObj =  {
+        name: "Popcorn",
+        description: "Microwave Popcorn",
+        //creates an array with an object inside 
+        ingredients: [
+            { name: "Bag of popcorn", 
+            measurement: "Whole bag",
+            amount: 1 
+            },
+        ]
+    }; 
+
+    //creating a variable, popcorn and setting it equal to the popcornObj Recipe  
+    //object
+    let popcorn = new Recipe(popcornObj);
+
+    //this is setting a variable (pbjSandwichpObj) to an object with different properties i.e. name, description, etc (this is actually creating our data)
+    let pbjSandwichObj =  {
+        name: "PB&J Sandwich",
+        description: "Classic PB&J Sandwich",
+        ingredients: [
+            { name: "Bread", 
+            amount: 2 
+            },
+
+            {name: "Peanut Butter",
+            measurement: "Tablespoon",
+            amount: 3
+            },
+
+            {name: "Grape Jelly",
+            measurement: "Tablespoon",
+            amount: 2
+            }
+        ]
+    }; 
+
+    //creates the pbjSandwich instance, creating a variable, pbjSandwich and setting it equal to the pbjSandwichObj 
+    //Recipe object
+    let pbjSandwich = new Recipe(pbjSandwichObj);
+
+    //this saves the pbj recipe to the database and prints it
+    //if there is an error, prints the error 
+    pbjSandwich.save()
+        .then(doc => {
+            console.log(doc)
+        })
+        .catch(err => {
+            console.error(err)
+        })
+
+    //fetch a record that was just created (READ)
+    //uses the search term PB&J Sandwich--then prints to the terminal (using promise) or gives 
+    //an error message if there is an error 
+    Recipe
+        .find ({
+            name: "PB&J Sandwich"
+        })
+        .then(doc => {
+            console.log(doc)
+        })
+        .catch(err => {
+            console.error.error(err)
+        })
+
+    //this finds the given item and then UPDATEs it    
+    Recipe
+        .findOneAndUpdate (
+            //search query
+            {name: "PB&J Sandwich"
+            },
+            //this is the field (name) and the value to update to: Peanut Butter & Jelly 
+            {name: "Peanut Butter & Jelly!"
+            },
+            //returns updated doc
+            { new : true,
+                //validates before update
+              runValidators: true
+            })
+            //updates the record and prints 
+            .then(doc => {
+                console.log(doc)
+            })
+            //if there is an error, returns this 
+            .catch(err => {
+                console.error(err)
+            })
+        
+            //use the findOneAndRemove call to delete the record above and return
+            //the original document that was removed 
+
+
+        //DELETE
+        Recipe 
+            //.findOneAndRemove removes the record name: "Peanut Butter & Jelly!"
+            //and returns the original document that was removed--name goes back to "PB&J Sandwich"
+            .findOneAndRemove ({
+                name: "Peanut Butter & Jelly!"
+            })
+            //prints the response 
+            .then(response => {
+                console.log(response)
+            })
+            //if an error, print the error message
+            .catch(err => {
+                console.error(err)
+            })
+
+
+   //CREATEs a new recipe name called Ants on a log, if there is an error, do the 
+   //callback function instead
+   Recipe.create({ name: "Ants on a Log" }, function (err, new_name) {
+       if (err) return handleError(err);
+   });
+
+   //creates a new recipe name called Chicken Noodle Soup, if there is an error, do 
+   //the callback function instead
+   Recipe.create({ name: "Chicken Noodle Soup" }, function (err, new_name) {
+    if (err) return handleError(err);
+   });
+
+
+
+    //this is using the find method to look at the Recipe model 
+    //if there is an error, return the error callback function
+    Recipe.find(function(err, recipes){
+        if(err) return console.error(err);
+        //print the recipes 
+        console.log(recipes);
+        //prints recipes at index 0 of the ingredients property 
+        recipes[0].ingredients;
     });
 
-    recipe2.save(function(err, eggs){
-        if(err) return console.error(err); 
-        recipe2.make(); 
-    });
-
-    recipe3.save(function(err, popcorn){
-        if(err) return console.error(err); 
-        recipe3.make(); 
-    });
-    //silence.save(function(err,cat){
-      //  if(err) return console.error(err);
-        //cat.speak(); 
-    //})
-    
-    /*find is a method attached directly to our Kitten model/class */ 
-    //Kitten.find(function(err, kittens){
-      //  if(err) return console.error(err);
-        //console.log(kittens); 
-    //})
-
-    /* mongoose supports mongodb's rich query language */ 
-    //Kitten.find({ name: /^fluff/ }, function(err,cat){
-        //check for errors
-        //print to console. 
-    //})
 
 });
 
 
 
-//node getting-started.js ------this is the command to run
+//node recipe_db.js ------this is the command to run in terminal 
